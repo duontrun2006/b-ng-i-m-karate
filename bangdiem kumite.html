@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điểm Kumite Karate</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scoreboard-container {
+            width: 90%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        /* --- SCORE SECTION --- */
+        .scores-wrapper {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            align-items: center;
+        }
+
+        .side-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .score-box {
+            width: 180px;
+            height: 180px;
+            border-radius: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 110px;
+            font-weight: bold;
+            color: #ffffff;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .score-box.red { background-color: #E50012; }
+        .score-box.blue { background-color: #0066CC; }
+
+        .score-box.senshu::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-bottom: 65px solid #00B050;
+            border-right: 65px solid transparent;
+            border-bottom-left-radius: 25px;
+        }
+
+        .btn-adjust-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-adjust {
+            width: 23px;
+            height: 23px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: transparent;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-adjust:active {
+            background-color: #151515;
+            border-color: #444444;
+            transform: scale(0.92);
+        }
+
+        /* --- PENALTIES SECTION --- */
+        .penalties-wrapper {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .penalty-group {
+            display: flex;
+            background-color: #333;
+            padding: 4px;
+            border-radius: 6px;
+            gap: 6px;
+        }
+
+        .btn-penalty {
+            width: 55px;
+            height: 35px;
+            background-color: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-penalty.active-yellow {
+            background-color: #FFFF00 !important;
+            color: #000000 !important;
+        }
+
+        .btn-penalty.active-red {
+            background-color: #FF0000 !important;
+            color: #FFFFFF !important;
+        }
+
+        /* --- TIMER DISPLAY --- */
+        .timer-display {
+            font-size: 135px;
+            font-weight: bold;
+            color: #FFFF00;
+            font-family: monospace;
+            text-align: center;
+            margin: 5px 0;
+            min-height: 150px;
+            cursor: pointer;
+        }
+
+        .timer-display.red-warning { color: #FF0000; }
+
+        /* HIỆU ỨNG NHẤP NHÁY MÀU ĐỎ KHI HẾT GIỜ (00:00.0) */
+        .timer-display.time-over {
+            color: #FF0000 !important;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* --- CONTROL BAR --- */
+        .controls-wrapper {
+            position: fixed;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 100;
+        }
+
+        .btn-ctrl {
+            padding: 2px 5px;
+            font-size: 8px;
+            font-weight: bold;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        .btn-start { background-color: #00B050; }
+        .btn-stop { background-color: #FF0000; }
+        .btn-reset { background-color: #7F7F7F; }
+
+        .preset-container { position: relative; }
+
+        .btn-preset-toggle {
+            background-color: #7F7F7F;
+            color: #fff;
+            padding: 2px 4px;
+            border-radius: 2px;
+            border: none;
+            font-size: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .preset-menu {
+            display: none;
+            position: absolute;
+            bottom: 110%;
+            left: 0;
+            background-color: #7F7F7F;
+            border-radius: 2px;
+            overflow: hidden;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .preset-menu.show { display: flex; }
+
+        .preset-item {
+            padding: 2px 4px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-alarm {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #FF0000;
+            border: 1px solid #CC0000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .btn-alarm svg { width: 7px; height: 7px; fill: #ffffff; }
+
+        /* MODAL TIMER */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000000;
+            z-index: 999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-timer-display {
+            font-size: 160px;
+            font-weight: bold;
+            color: #FFFF00;
+            font-family: monospace;
+        }
+
+        .modal-controls { display: flex; gap: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="scoreboard-container">
+        <!-- SCORES -->
+        <div class="scores-wrapper">
+            <div class="side-container blue-side">
+                <div class="btn-adjust-group">
+                    <button class="btn-adjust" onclick="changeScore('blue', 1)">+</button>
+                    <button class="btn-adjust" onclick="changeScore('blue', -1)">-</button>
+                </div>
+                <div class="score-box blue" id="score-blue" onclick="toggleSenshu('blue')">0</div>
+            </div>
+
+            <div class="side-container red-side">
+                <div class="score-box red" id="score-red" onclick="toggleSenshu('red')">0</div>
+                <div class="btn-adjust-group">
+                    <button class="btn-adjust" onclick="changeScore('red', 1)">+</button>
+                    <button class="btn-adjust" onclick="changeScore('red', -1)">-</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PENALTIES -->
+        <div class="penalties-wrapper">
+            <div class="penalty-group" id="penalties-blue">
+                <button class="btn-penalty" data-type="C" onclick="togglePenalty(this)">C</button>
+                <button class="btn-penalty" data-type="C" onclick="togglePenalty(this)">C</button>
+                <button class="btn-penalty" data-type="C" onclick="togglePenalty(this)">C</button>
+                <button class="btn-penalty" data-type="HC" onclick="togglePenalty(this)">HC</button>
+                <button class="btn-penalty" data-type="H" onclick="togglePenalty(this)">H</button>
+            </div>
+
+            <div class="penalty-group" id="penalties-red">
+                <button class="btn-penalty" data-type="H" onclick="togglePenalty(this)">H</button>
+                <button class="btn-penalty" data-type="HC" onclick="togglePenalty(this)">HC</button>
+                <button class="btn-penalty" data-type="C" onclick="togglePenalty(this)">C</button>
+                <button class="btn-penalty" data-type="C" onclick="togglePenalty(this)">C</button>
+                <button class="btn-penalty" data-type="C" onclick="togglePenalty(this)">C</button>
+            </div>
+        </div>
+
+        <!-- MAIN TIMER -->
+        <div class="timer-display" id="main-timer" onclick="setCustomTime()">01:00</div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls-wrapper">
+        <button class="btn-ctrl btn-start" onclick="startMainTimer()">START</button>
+        <button class="btn-ctrl btn-stop" onclick="stopMainTimer()">STOP</button>
+
+        <div class="preset-container">
+            <div class="preset-menu" id="preset-menu">
+                <button class="preset-item" onclick="selectPreset(60, '01:00')">01:00</button>
+                <button class="preset-item" onclick="selectPreset(90, '01:30')">01:30</button>
+                <button class="preset-item" onclick="selectPreset(120, '02:00')">02:00</button>
+                <button class="preset-item" onclick="selectPreset(180, '03:00')">03:00</button>
+            </div>
+            <button class="btn-preset-toggle" onclick="togglePresetMenu()">
+                <span id="current-preset-text">01:00</span> &lt;
+            </button>
+        </div>
+
+        <button class="btn-ctrl btn-reset" onclick="reloadPage()">RESET</button>
+
+        <button class="btn-alarm" onclick="openModalTimer()">
+            <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 12,4M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></svg>
+        </button>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-timer-display" id="modal-timer">01:00</div>
+        <div class="modal-controls">
+            <button class="btn-ctrl btn-start" style="padding:8px 18px; font-size:16px;" onclick="startModalTimer()">START</button>
+            <button class="btn-ctrl btn-stop" style="padding:8px 18px; font-size:16px;" onclick="stopModalTimer()">STOP</button>
+            <button class="btn-ctrl btn-reset" style="padding:8px 18px; font-size:16px;" onclick="closeModalTimer()">Đóng</button>
+        </div>
+    </div>
+
+    <script>
+        // State variables
+        let scores = { red: 0, blue: 0 };
+        let senshuSide = null;
+
+        function changeScore(side, delta) {
+            scores[side] = Math.max(0, scores[side] + delta);
+            document.getElementById(`score-${side}`).innerText = scores[side];
+        }
+
+        function toggleSenshu(side) {
+            const redBox = document.getElementById('score-red');
+            const blueBox = document.getElementById('score-blue');
+
+            if (senshuSide === side) {
+                senshuSide = null;
+                redBox.classList.remove('senshu');
+                blueBox.classList.remove('senshu');
+            } else {
+                senshuSide = side;
+                redBox.classList.toggle('senshu', side === 'red');
+                blueBox.classList.toggle('senshu', side === 'blue');
+            }
+        }
+
+        function togglePenalty(btn) {
+            const type = btn.getAttribute('data-type');
+            if (type === 'H') btn.classList.toggle('active-red');
+            else btn.classList.toggle('active-yellow');
+        }
+
+        // Timer Logic
+        let mainInitialSeconds = 60;
+        let mainRemainingMs = mainInitialSeconds * 1000;
+        let mainTimerInterval = null;
+        let digitBuffer = "0100";
+
+        const mainTimerDisplay = document.getElementById('main-timer');
+
+        function updateMainDisplay() {
+            const totalSeconds = mainRemainingMs / 1000;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const tenths = Math.floor((mainRemainingMs % 1000) / 100);
+
+            const mm = String(minutes).padStart(2, '0');
+            const ss = String(seconds).padStart(2, '0');
+
+            if (mainRemainingMs <= 0) {
+                mainTimerDisplay.innerText = "00:00.0";
+                mainTimerDisplay.classList.remove('red-warning');
+                mainTimerDisplay.classList.add('time-over');
+            } else if (mainRemainingMs <= 15900) {
+                mainTimerDisplay.innerText = `${mm}:${ss}.${tenths}`;
+                mainTimerDisplay.classList.add('red-warning');
+                mainTimerDisplay.classList.remove('time-over');
+            } else {
+                mainTimerDisplay.innerText = `${mm}:${ss}`;
+                mainTimerDisplay.classList.remove('red-warning', 'time-over');
+            }
+        }
+
+        function syncDigitBuffer() {
+            const totalSec = Math.floor(mainRemainingMs / 1000);
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            digitBuffer = String(m).padStart(2, '0') + String(s).padStart(2, '0');
+        }
+
+        function startMainTimer() {
+            if (mainTimerInterval || mainRemainingMs <= 0) return;
+            const startTime = Date.now();
+            const initialMs = mainRemainingMs;
+
+            mainTimerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                mainRemainingMs = Math.max(0, initialMs - elapsed);
+
+                if (mainRemainingMs <= 0) {
+                    stopMainTimer();
+                }
+
+                updateMainDisplay();
+            }, 50);
+        }
+
+        function stopMainTimer() {
+            if (mainTimerInterval) {
+                clearInterval(mainTimerInterval);
+                mainTimerInterval = null;
+                syncDigitBuffer();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('modal-overlay').classList.contains('active')) return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (mainTimerInterval) stopMainTimer();
+                else startMainTimer();
+                return;
+            }
+
+            if (!mainTimerInterval) {
+                if (e.key >= '0' && e.key <= '9') {
+                    e.preventDefault();
+                    if (digitBuffer.length >= 4) digitBuffer = digitBuffer.substring(1);
+                    digitBuffer += e.key;
+                    applyDigitBuffer();
+                } else if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    digitBuffer = digitBuffer.slice(0, -1);
+                    applyDigitBuffer();
+                }
+            }
+        });
+
+        function applyDigitBuffer() {
+            if (digitBuffer === "") {
+                mainRemainingMs = 0;
+            } else {
+                let padded = digitBuffer.padStart(4, '0');
+                let min = parseInt(padded.substring(0, 2), 10);
+                let sec = parseInt(padded.substring(2, 4), 10);
+                if (sec > 59) sec = 59;
+                mainRemainingMs = (min * 60 + sec) * 1000;
+            }
+            updateMainDisplay();
+        }
+
+        function setCustomTime() {
+            if (mainTimerInterval) return;
+            const totalSec = Math.floor(mainRemainingMs / 1000);
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            const input = prompt("Nhập thời gian (Phút:Giây):", `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+            if (input !== null) {
+                let parts = input.trim().split(':');
+                let newMs = 0;
+                if (parts.length === 2) {
+                    newMs = ((parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0)) * 1000;
+                } else if (parts.length === 1) {
+                    newMs = (parseInt(parts[0], 10) || 0) * 1000;
+                }
+                mainRemainingMs = Math.max(0, newMs);
+                syncDigitBuffer();
+                updateMainDisplay();
+            }
+        }
+
+        function togglePresetMenu() {
+            document.getElementById('preset-menu').classList.toggle('show');
+        }
+
+        function selectPreset(seconds, label) {
+            stopMainTimer();
+            mainInitialSeconds = seconds;
+            mainRemainingMs = seconds * 1000;
+            syncDigitBuffer();
+            document.getElementById('current-preset-text').innerText = label;
+            document.getElementById('preset-menu').classList.remove('show');
+            updateMainDisplay();
+        }
+
+        function reloadPage() { location.reload(); }
+
+        // Modal Timer Logic
+        let modalRemainingMs = 60 * 1000;
+        let modalTimerInterval = null;
+
+        function openModalTimer() {
+            document.getElementById('modal-overlay').classList.add('active');
+            resetModalTimer();
+        }
+
+        function closeModalTimer() {
+            stopModalTimer();
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        function updateModalDisplay() {
+            const totalSeconds = modalRemainingMs / 1000;
+            const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const ss = String(Math.floor(totalSeconds % 60)).padStart(2, '0');
+            document.getElementById('modal-timer').innerText = `${mm}:${ss}`;
+        }
+
+        function startModalTimer() {
+            if (modalTimerInterval || modalRemainingMs <= 0) return;
+            const startTime = Date.now();
+            const initialMs = modalRemainingMs;
+
+            modalTimerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                modalRemainingMs = Math.max(0, initialMs - elapsed);
+                if (modalRemainingMs <= 0) {
+                    stopModalTimer();
+                }
+                updateModalDisplay();
+            }, 100);
+        }
+
+        function stopModalTimer() {
+            if (modalTimerInterval) {
+                clearInterval(modalTimerInterval);
+                modalTimerInterval = null;
+            }
+        }
+
+        function resetModalTimer() {
+            stopModalTimer();
+            modalRemainingMs = 60 * 1000;
+            updateModalDisplay();
+        }
+
+        syncDigitBuffer();
+        updateMainDisplay();
+    </script>
+</body>
+</html>
